@@ -1,0 +1,31 @@
+---
+- name: yum-cron
+  hosts: all
+  tasks:
+          - name: Install yum-cron
+            yum:
+                    name: yum-cron
+                    state: present
+            register: install_yum_cron
+
+          - name: config cron hourly - update_cmd = minimal-security
+            ini_file: dest=/etc/yum/yum-cron-hourly.conf section=commands option=update_cmd value=minimal-security backup=yes
+            tags: configuration
+
+          - name: config cron daily - update_cmd = security
+            ini_file: dest=/etc/yum/yum-cron.conf section=commands option=update_cmd value=security backup=yes
+            tags: configuration
+
+          - name: start service yum-cron
+            service:
+                    name: yum-cron
+                    state: started
+
+          - name: install today on /var/log/yum.log
+            shell: grep "$(date '+%b %d')" /var/log/yum.log
+            when: install_yum_cron.changed
+            register: yumlog
+
+          - debug: var=yumlog.stdout_lines
+            when: install_yum_cron.changed
+
